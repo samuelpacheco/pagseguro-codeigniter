@@ -1,4 +1,4 @@
-<?php
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
 /*
  ************************************************************************
@@ -40,24 +40,39 @@ class PagSeguroLibrary
     private static $cms_version;
     private static $php_version;
 
-    private function __construct()
-    {
-        self::$path = (dirname(__FILE__));
-        PagSeguroAutoloader::init();
-        self::$resources = PagSeguroResources::init();
-        self::$config = PagSeguroConfig::init();
-        self::$log = LogPagSeguro::init();
-    }
+//     private function __construct()
+//     {
+//         self::$path = (dirname(__FILE__));
+//         PagSeguroAutoloader::init();
+//         self::$resources = PagSeguroResources::init();
+//         self::$config = PagSeguroConfig::init();
+//         self::$log = LogPagSeguro::init();
+//     }
 
-    public static function init()
-    {
-        self::verifyDependencies();
-        if (self::$library == null) {
-            self::$library = new PagSeguroLibrary();
-        }
-        return self::$library;
-    }
+//     public static function init()
+//     {
+//         self::verifyDependencies();
+//         if (self::$library == null) {
+//             self::$library = new PagSeguroLibrary();
+//         }
+//         return self::$library;
+//     }
 
+    public function __construct() {
+    	if(self::verifyDependencies()) {
+    		if (self::$library == null) {
+    			self::$path 	 = (dirname(__FILE__));
+    			PagSeguroAutoloader::init();
+    			self::$resources = PagSeguroResources::init();
+    			self::$config 	 = PagSeguroConfig::init();
+    			self::$log 	 	 = LogPagSeguro::init();
+    			self::$library = $this;
+    		}
+    	}
+    	return self::$library;
+    }
+    
+    
     private static function verifyDependencies()
     {
 
@@ -127,4 +142,4 @@ class PagSeguroLibrary
     }
 }
 
-PagSeguroLibrary::init();
+// PagSeguroLibrary::init();
