@@ -58,22 +58,21 @@ class Ofertas extends CI_Controller {
 				$paymentRequest->setReference ( $venda->idVenda );
 	
 				// Add an item for this payment request
-				$paymentRequest->addItem ( '0001', truncate(utf8_decode($promocao->nome), 80, '...'), 1, number_format ( $venda->valorDevido, 2, '.', '' ) );
+				$paymentRequest->addItem ( '0001', substr($promocao->nome, 0, 80), 1, number_format ( $venda->valorDevido, 2, '.', '' ) );
 	
 				$paymentRequest->setShippingType ( 3 );
 				$paymentRequest->setShippingAddress ( str_replace ( '-', '', str_replace ( '.', '', $userObj->CEP ) )
-						, utf8_decode($userObj->endereco)
+						, $userObj->endereco
 						, $userObj->numero
-						, utf8_decode($userObj->complemento)
-						, utf8_decode($userObj->bairro)
-						, utf8_decode($userObj->cidade)
+						, $userObj->complemento
+						, $userObj->bairro
+						, $userObj->cidade
 						, (($estadoObj->sigla)? $estadoObj->sigla : ''), 'BRA' );
 	
 				// Sets your customer information.
-				$telefone = numbersOnly($userObj->telefone1);
-				$paymentRequest->setSenderName(utf8_decode(truncate($userObj->nome, 49)));
+				$paymentRequest->setSenderName(substr($userObj->nome,0,40));
 				$paymentRequest->setSenderEmail($userObj->email);
-				$paymentRequest->setSenderPhone(substr ( $telefone, 0, 2 ), substr ( $telefone, 2, 8 ));
+				$paymentRequest->setSenderPhone($userObj->telefone1);
 	
 				$paymentRequest->setRedirectUrl ( base_url('ofertas/retornoPagamento') );
 				$paymentRequest->setMaxAge(86400 * 3);
