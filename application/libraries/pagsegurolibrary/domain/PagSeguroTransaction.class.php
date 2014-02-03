@@ -22,7 +22,6 @@
  * Class PagSeguroTransaction
  * Represents a PagSeguro transaction
  *
- * @property    PagSeguroSender $sender
  *
  */
 class PagSeguroTransaction

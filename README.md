@@ -1,7 +1,7 @@
 Pagseguro Code Igniter
 =====================
 
-Adaptação da API PagSeguro Library Class 2.0.3 para utilização com Code Igniter.
+Adaptação da API PagSeguro Library Class 2.2.0 para utilização com Code Igniter.
 
 Instalação
 =====================
@@ -26,17 +26,11 @@ Na seu controller:
     <?php
     
     class MeuController extends CI_Controller {
-      private $pgAccount;
-      private $pgToken;
-      
       public function __construct() {
       	parent::__construct ();
         
         $this->load->config('pagseguro');
         $this->load->library('PagSeguroLibrary');
-        
-        $this->pgAccount = $this->config->item ( 'pagseguroAccount' );
-        $this->pgToken = $this->config->item ( 'pagseguroToken' );
       }
     }
     ?>

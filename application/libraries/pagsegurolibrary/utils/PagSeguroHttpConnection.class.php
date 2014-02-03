@@ -81,11 +81,13 @@ class PagSeguroHttpConnection
             );
         }
 
+
         $options = array(
             CURLOPT_HTTPHEADER => array(
                 "Content-Type: application/x-www-form-urlencoded; charset=" . $charset,
                 $contentLength,
-                'lib-description: php:' . PagSeguroLibrary::getVersion()
+                'lib-description: php:' . PagSeguroLibrary::getVersion(),
+                'language-engine-description: php:' . PagSeguroLibrary::getPHPVersion()
             ),
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -95,21 +97,14 @@ class PagSeguroHttpConnection
             //CURLOPT_TIMEOUT => $timeout
             );
 
-        // adding module version
         if (!is_null(PagSeguroLibrary::getModuleVersion())) {
             array_push($options[CURLOPT_HTTPHEADER], 'module-description: ' . PagSeguroLibrary::getModuleVersion());
         }
 
-        // adding CMS version
         if (!is_null(PagSeguroLibrary::getCMSVersion())) {
             array_push($options[CURLOPT_HTTPHEADER], 'cms-description: ' . PagSeguroLibrary::getCMSVersion());
         }
         
-        // adding PHP version
-        if (!is_null(PagSeguroLibrary::getPHPVersion())) {
-            array_push($options[CURLOPT_HTTPHEADER], 'language-engine-description: php:' . PagSeguroLibrary::getPHPVersion());
-        }
-
         $options = ($options + $methodOptions);
 
         $curl = curl_init();
