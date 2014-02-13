@@ -654,7 +654,7 @@ class PagSeguroPaymentRequest
             '::1'
         );
 
-        $urlReturn;
+        $urlReturn = null;
         foreach ($adress as $item) {
             $find = strpos($url, $item);
 
