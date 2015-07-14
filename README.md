@@ -36,7 +36,7 @@ Na seu controller:
     ?>
 
 Pronto! Agora basta vc usar os métodos para pagamento do Pag Seguro.
-OBS: Veja o arquivo de exemplo no repositório.
+OBS: Veja o arquivo de exemplo no repositório com todos os métodos que deverá ser implementados.
 
 Autoload Code Igniter
 =====================

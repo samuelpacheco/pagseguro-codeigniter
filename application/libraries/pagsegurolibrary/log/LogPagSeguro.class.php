@@ -43,7 +43,6 @@ class LogPagSeguro
 
     public static function reLoad()
     {
-
         self::$active = PagSeguroConfig::logIsActive();
         if (self::$active) {
             $fileLocation = PagSeguroConfig::getLogFileLocation();
@@ -68,6 +67,7 @@ class LogPagSeguro
         }
         $defaultPath = PagSeguroLibrary::getPath();
         $defaultName = 'PagSeguro.log';
+        
         self::$fileLocation = $defaultPath . DIRECTORY_SEPARATOR . $defaultName;
 
         try {

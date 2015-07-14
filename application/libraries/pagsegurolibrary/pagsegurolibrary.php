@@ -1,4 +1,4 @@
-<?php if (! defined ( 'BASEPATH' )) exit ( 'No direct script access allowed' );
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
 
 /*
  ************************************************************************
@@ -20,13 +20,17 @@
 
 /*
  * PagSeguro Library Class
- * Version: 2.1.9
- * Date: 22/10/2013
+ * Version: 2.1.8
+ * Date: 21/08/2013
  */
+define('PAGSEGURO_LIBRARY', true);
+
+require_once "loader" . DIRECTORY_SEPARATOR . "PagSeguroAutoLoader.class.php";
+
 class PagSeguroLibrary
 {
 
-    const VERSION = "2.2.0";
+    const VERSION = "2.1.8";
     public static $resources;
     public static $config;
     public static $log;
@@ -47,7 +51,6 @@ class PagSeguroLibrary
 
 //     public static function init()
 //     {
-//         require_once "loader" . DIRECTORY_SEPARATOR . "PagSeguroAutoLoader.class.php";
 //         self::verifyDependencies();
 //         if (self::$library == null) {
 //             self::$library = new PagSeguroLibrary();
@@ -55,6 +58,21 @@ class PagSeguroLibrary
 //         return self::$library;
 //     }
 
+    public function __construct() {
+    	if(self::verifyDependencies()) {
+    		if (self::$library == null) {
+    			self::$path 	 = (dirname(__FILE__));
+    			PagSeguroAutoloader::init();
+    			self::$resources = PagSeguroResources::init();
+    			self::$config 	 = PagSeguroConfig::init();
+    			self::$log 	 	 = LogPagSeguro::init();
+    			self::$library = $this;
+    		}
+    	}
+    	return self::$library;
+    }
+    
+    
     private static function verifyDependencies()
     {
 
@@ -107,7 +125,7 @@ class PagSeguroLibrary
     {
         return self::$php_version = phpversion();
     }
-
+    
     final public static function setPHPVersion($version)
     {
         self::$php_version = $version;

@@ -21,8 +21,6 @@
 /**
  * Class PagSeguroTransaction
  * Represents a PagSeguro transaction
- *
- *
  */
 class PagSeguroTransaction
 {

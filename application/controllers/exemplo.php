@@ -1,46 +1,68 @@
 <?php if (! defined ( 'BASEPATH' )) exit ( 'No direct script access allowed' );
 
 class Ofertas extends CI_Controller {
+	
+	private $urlRetornoPagamento;
+	
 	/**
 	 * Construtor da classe
 	 */
 	public function __construct() {
 		parent::__construct ();
-		$this->load->config('pagseguro');
-		$this->load->library('PagSeguroLibrary');
+		// DESCOMENTE ISSO SE NAO ESTIVER NO AUTOLOAD
+		// $this->load->config('pagseguro');
+		// $this->load->library('PagSeguroLibrary');
+		
+		$this->urlRetornoPagamento = base_url('ofertas/retornoPagamento');
 	}
 
-	/**
+	public function registra_venda() {
+		// ....
+		// Aqui vc faz todo o registro de sua venda e ao finalizar chama o método de pagamento pagseguro.
+		redirect(base_url('ofertas/pagseguro/ID_SUA_VENDA'));
+		
+		// SE VC QUER UTILIZAR CHECKOUT TRANSPARENTE VIA LIGHTBOX PAGSEGURO, COMMENTE A CHAMADA ACIMA
+		// E NA SUA VIEW IMPLEMENTE OS JS A SEGUIR NA ORDEM:
+		// jquery-1.7.2.min.js
+		// jquery.validate.min.js
+		// jquery-forms.js
+		// common.js
+		// pagamento.js
+		
+		// COM ISSO FARA UMA CHAMADA AJAX GET e RETORNANDO TUDO OK IRA ABRIR O LIGHTBOX PAGSEGURO.
+		
+		
+		
+		// IMPORTANTE:
+		// CONFIGURE CORRETAMENTE AS URLS DE RETORNO NO PAGSEGURO.
+		
+	}
+	
+	
+	//  TODOS OS METODOS ABAIXO DEVEM SER IMPLEMENTADOS.
+	
+/**
 	 * Pagseguro
 	 *
 	 * @access public
 	 * @param int(11) idVenda
 	 */
 	public function pagseguro($idVenda) {
-		if($this->session->userdata('logged_in') == true && $this->session->userdata('userData')->idTipoUsuario == 4) {
+		if($idVenda) {
 
-			$this->data['hasError'] = false;
-			$this->data['errorList'] = array();
+			$hasError = false;
+			$errorList = array();
 
-			$venda = array_shift($this->Vendas_model->getVenda(array('idVenda' => $idVenda)));
+			// procura sua transação no banco de dados
+			$venda = $this->db->get_where( 'tabela_vendas', array('idVenda' => $idVenda) )->row(); 
 			// validações
 
 			if(!is_object($venda)) {
-				$this->data['hasError'] = true;
-				$this->data['errorList'][] = array('message' => 'Não foi possível localizar sua compra.');
+				$hasError = true;
+				$errorList[] = array('message' => 'Não foi possível localizar sua compra.');
 			}
 
-			if(!$this->data['hasError']) {
-				$userObj = $this->session->userdata ( 'userData' );
-				$promocao = $this->Promocoes_model->getPromocaoById($venda->idPromocao);
-
-				// Pega o estado do usuário
-				$estadoObj = null;
-				if($userObj->idEstado) {
-					$filter = array ('idEstado' =>  $userObj->idEstado);
-					$estadoObj = array_shift ( $this->Estados_model->getEstado ( $filter ) );
-				}
-
+			if(!$hasError) {
 				// Instantiate a new payment request
 				$paymentRequest = new PagSeguroPaymentRequest ();
 
@@ -52,47 +74,49 @@ class Ofertas extends CI_Controller {
 				$paymentRequest->setReference ( $venda->idVenda );
 
 				// Add an item for this payment request
-				$paymentRequest->addItem ( '0001', substr($promocao->nome, 0, 80), 1, number_format ( $venda->valorDevido, 2, '.', '' ) );
+				$paymentRequest->addItem ( '0001', 'nome do item', 1, number_format ( $venda->valorDevido, 2, '.', '' ) );
 
 				$paymentRequest->setShippingType ( 3 );
-				$paymentRequest->setShippingAddress ( str_replace ( '-', '', str_replace ( '.', '', $userObj->CEP ) )
-						, $userObj->endereco
-						, $userObj->numero
-						, $userObj->complemento
-						, $userObj->bairro
-						, $userObj->cidade
-						, (($estadoObj->sigla)? $estadoObj->sigla : ''), 'BRA' );
+				$paymentRequest->setShippingAddress ( str_replace ( '-', '', str_replace ( '.', '', $venda->CEP ) )
+						, utf8_decode($venda->endereco)
+						, $venda->numero
+						, utf8_decode($venda->complemento)
+						, utf8_decode($venda->bairro)
+						, utf8_decode($venda->cidade)
+						, (($venda->sigla)? $venda->sigla : ''), 'BRA' );
 
 				// Sets your customer information.
-				$paymentRequest->setSenderName(substr($userObj->nome,0,40));
-				$paymentRequest->setSenderEmail($userObj->email);
-				$paymentRequest->setSenderPhone($userObj->telefone1);
+				$telefone = $venda->telefone1;
+// 				$paymentRequest->setSenderName(truncate($userObj->nome, 40));
+				$paymentRequest->setSenderEmail($venda->email);
+				$paymentRequest->setSenderPhone(substr ( $telefone, 0, 2 ), substr ( $telefone, 2, 8 ));
 
-				$paymentRequest->setRedirectUrl ( base_url('ofertas/retornoPagamento') );
+				// TODO Alterar a URL de RETORNO DE PAGAMENTO SUA URL
+				$paymentRequest->setRedirectUrl ( $this->urlRetornoPagamento );
 				$paymentRequest->setMaxAge(86400 * 3);
 
 				try {
 					$credentials = new PagSeguroAccountCredentials ( $this->config->item ( 'pagseguroAccount' ), $this->config->item ( 'pagseguroToken' ) );
 					$url = $paymentRequest->register ( $credentials );
-
-					$dados = array(
-							'meioPagamento' => 2
-							,'statusPagamento' => 1
-							,'dataAtualizacao' => date('Y-m-d H:i:s')
-					);
-
-					$this->Vendas_model->update($dados, $venda->idVenda);
-					redirect ( $url );
-
+					$parts = parse_url($url);
+					parse_str($parts['query'], $query);
+					
+					
+					if($this->input->is_ajax_request()) {
+						$data = array('hasError' => FALSE, 'checkoutCode' => $query['code']);
+						$this->output
+							->set_content_type('application/json')
+							->set_output(json_encode($data));
+					} else {
+						redirect ( $url );
+					}
 				} catch ( PagSeguroServiceException $e ) {
-					$this->data['hasError'] = true;
-					$this->data['errorList'][] = array('message' => 'Ocorreu um erro ao comunicar com o Pagseguro.' .$e->getCode() . ' - ' .  $e->getMessage());
+					$hasError = true;
+					$errorList[] = array('message' => 'Ocorreu um erro ao comunicar com o Pagseguro.' .$e->getCode() . ' - ' .  $e->getMessage());
 				}
-
-				var_dump($this->data['errorList']);
 			}
 		} else {
-			redirect(base_url('login'));
+			redirect(base_url());
 		}
 	}
 
@@ -116,7 +140,8 @@ class Ofertas extends CI_Controller {
 			self::setTransacaoPagseguro($transaction);
 		}
 
-		redirect ( base_url('minha-conta') );
+		// VC PODE COLOCAR A URL QUE VC DESEJA ENVIAR O USUARIO APOS CONCLUIR A COMPRA
+		redirect ( base_url() );
 	}
 
 	/**
@@ -127,72 +152,35 @@ class Ofertas extends CI_Controller {
 	 * @param array $transaction
 	 * @return void
 	 */
-	private function setTransacaoPagseguro($transaction = null) {
+private function setTransacaoPagseguro($transaction = null) {
 		// Pegamos o objeto da transação
 		$transactionObj = self::getTransaction ( $transaction );
 
 		// Buscamos a venda
-		$filter = array ('idVenda' => $transactionObj ['reference']);
-		$vendaList = $this->Vendas_model->getVenda ( $filter );
+		$venda = $this->db->get_where( 'tabela_vendas', array('idVenda' => $transactionObj ['reference']) )->row();
 
 		// existindo a venda
-		if (is_array ( $vendaList ) && sizeof ( $vendaList ) > 0) {
-			$venda = array_shift($vendaList);
-
+		if (is_object($venda)) {
 			// Aguardando pagamento
 			if ($transactionObj ['status'] == 1) {
-
-				$dados = array(
-						'meioPagamento' => 2
-						,'statusPagamento' => 1
-						,'idTransacao' => $transaction->getCode()
-						,'dataAtualizacao' => date('Y-m-d H:i:s')
-				);
-
-				$this->Vendas_model->update($dados, $venda->idVenda);
+				// ACAO PARA AGUARDANDO PAGAMENTO
 			}
 
 
 			// Aguardando aprovação
 			if ($transactionObj ['status'] == 2) {
-				$dados = array(
-						'meioPagamento' => 2
-						,'statusPagamento' => 2
-						,'idTransacao' => $transaction->getCode()
-						,'dataAtualizacao' => date('Y-m-d H:i:s')
-				);
-
-				$this->Vendas_model->update($dados, $venda->idVenda);
+				// ACAO PARA GUARDAR TRANSACAO AGUARDANDO APROVACAO
 			}
 
 			// Transação paga
 			if ($transactionObj ['status'] == 3) {
 
-				$lastEvent = strtotime($transaction->getLastEventDate());
-
-				$dados = array(
-						'statusPagamento' => 3
-						,'valorPago' =>  $transaction->getGrossAmount()
-						,'taxas' => $transaction->getFeeAmount()
-						,'idTransacao' => $transaction->getCode()
-						,'dataAtualizacao' => date('Y-m-d H:i:s')
-						,'dataCredito' => date('Y-m-d H:i:s', $lastEvent)
-				);
-
-				$this->Vendas_model->update($dados, $venda->idVenda);
+				// ACAO PARA TRANSACAO PAGA
 			}
 
 			// Pagamento cancelado
-			if ($transactionObj ['status'] == 7 && $venda->statusPagamento != 3) {
-				$dados = array(
-						'meioPagamento' => 2
-						,'statusPagamento' => 7
-						,'taxas' => $transaction->getFeeAmount()
-						,'idTransacao' => $transaction->getCode()
-						,'dataAtualizacao' => date('Y-m-d H:i:s')
-				);
-
-				$this->Vendas_model->update($dados, $venda->idVenda);
+			if ($transactionObj ['status'] == 7) {
+				// ACAO PARA TRANSACAO CANCELADA
 			}
 		}
 	}
